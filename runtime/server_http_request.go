@@ -72,12 +72,11 @@ func NewServerHTTPRequest(
 	endpoint *RouterEndpoint,
 ) *ServerHTTPRequest {
 	req := &ServerHTTPRequest{
-		httpRequest: r,
-		ctx:         r.Context(),
-		queryValues: nil,
-		metrics:     endpoint.Metrics,
-		tracer:      endpoint.tracer,
-
+		httpRequest:   r,
+		ctx:           r.Context(),
+		queryValues:   nil,
+		tracer:        endpoint.tracer,
+		metrics:       endpoint.ContextMetrics.GetOrAddInboundHTTPMetrics(r.Context()),
 		contextLogger: endpoint.contextLogger,
 		EndpointName:  endpoint.EndpointName,
 		HandlerName:   endpoint.HandlerName,
@@ -87,6 +86,7 @@ func NewServerHTTPRequest(
 		Header:        NewServerHTTPHeader(r.Header),
 		Logger:        endpoint.logger,
 	}
+
 	req.res = NewServerHTTPResponse(w, req)
 	req.start()
 	return req

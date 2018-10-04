@@ -22,12 +22,12 @@ package zanzibar
 
 import (
 	"context"
-	"testing"
-
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
 )
 
 func TestWithEndpointField(t *testing.T) {
@@ -76,26 +76,49 @@ func TestGetEndpointRequestHeadersFromCtx(t *testing.T) {
 	assert.Equal(t, expected, requestHeaders)
 }
 
-func TestWithScopeFields(t *testing.T) {
+func TestWithEndpointScopeFields(t *testing.T) {
 	expected := map[string]string{"endpoint": "tincup", "handler": "exchange"}
-	ctx := WithScopeFields(context.TODO(), expected)
-	rs := ctx.Value(requestScopeFields)
+	ctx := WithEndpointScopeFields(context.TODO(), expected)
+	rs := ctx.Value(endpointScopeFields)
 	scopes, ok := rs.(map[string]string)
 
 	assert.True(t, ok)
-	assert.Equal(t, scopes, expected)
+	assert.Equal(t, expected, scopes)
 }
 
-func TestGetScopeFieldsFromCtx(t *testing.T) {
+func TestGetEndpointScopeFieldsFromCtx(t *testing.T) {
 	expected := map[string]string{"endpoint": "tincup", "handler": "exchange"}
 	scope := map[string]string{"endpoint": "tincup", "handler": "exchange"}
-	ctx := WithScopeFields(context.TODO(), scope)
-	scopes := GetScopeFieldsFromCtx(ctx)
+	ctx := WithEndpointScopeFields(context.TODO(), scope)
+	scopes := GetEndpointScopeFieldsFromCtx(ctx)
 	assert.Equal(t, expected, scopes)
 
 	expected = map[string]string{}
 	ctx = context.TODO()
-	scopes = GetScopeFieldsFromCtx(ctx)
+	scopes = GetEndpointScopeFieldsFromCtx(ctx)
+	assert.Equal(t, expected, scopes)
+}
+
+func TestWithRequestScopeFields(t *testing.T) {
+	expected := map[string]string{"region": "san_francisco", "os": "ios"}
+	ctx := WithRequestScopeFields(context.TODO(), expected)
+	rs := ctx.Value(requestScopeFields)
+	scopes, ok := rs.(map[string]string)
+
+	assert.True(t, ok)
+	assert.Equal(t, expected, scopes)
+}
+
+func TestGetRequestScopeFieldsFromCtx(t *testing.T) {
+	expected := map[string]string{"region": "san_francisco", "os": "ios"}
+	scope := map[string]string{"region": "san_francisco", "os": "ios"}
+	ctx := WithRequestScopeFields(context.TODO(), scope)
+	scopes := GetRequestScopeFieldsFromCtx(ctx)
+	assert.Equal(t, expected, scopes)
+
+	expected = map[string]string{}
+	ctx = context.TODO()
+	scopes = GetRequestScopeFieldsFromCtx(ctx)
 	assert.Equal(t, expected, scopes)
 }
 
@@ -174,6 +197,35 @@ func TestContextLogger(t *testing.T) {
 	logMessages = logs.TakeAll()
 	assert.Len(t, logMessages, 1)
 	assert.Equal(t, zap.ErrorLevel, logMessages[0].Level)
+}
+
+func TestContextMetrics(t *testing.T) {
+	ctx := context.Background()
+	contextMetrics := NewContextMetrics(tally.NewTestScope("test", make(map[string]string)))
+	endpointTags := map[string]string{"endpoint": "tincup", "handler": "exchange"}
+	ctx = WithEndpointScopeFields(ctx, endpointTags)
+	key := tally.KeyForPrefixedStringMap(
+		"test", endpointTags,
+	)
+	endpointMetrics := contextMetrics.getEndpointMetrics(key)
+	assert.Nil(t, endpointMetrics)
+	endpointMetrics = contextMetrics.GetOrAddEndpointMetrics(ctx)
+	assert.NotNil(t, endpointMetrics)
+
+	requestTags := map[string]string{"region": "san_francisco", "os": "ios"}
+	ctx = WithRequestScopeFields(ctx, requestTags)
+	key = tally.KeyForPrefixedStringMap(
+		"test", requestTags,
+	)
+	inboundHTTPMetrics := contextMetrics.getInboundHTTPMetrics(key)
+	assert.Nil(t, inboundHTTPMetrics)
+	inboundHTTPMetrics = contextMetrics.GetOrAddInboundHTTPMetrics(ctx)
+	assert.NotNil(t, inboundHTTPMetrics)
+
+	inboundTChannelMetrics := contextMetrics.getInboundTChannelMetrics(key)
+	assert.Nil(t, inboundTChannelMetrics)
+	inboundTChannelMetrics = contextMetrics.GetOrAddInboundTChannelMetrics(ctx)
+	assert.NotNil(t, inboundTChannelMetrics)
 }
 
 func TestContextLoggerPanic(t *testing.T) {

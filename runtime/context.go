@@ -22,10 +22,11 @@ package zanzibar
 
 import (
 	"context"
-
 	"github.com/pborman/uuid"
+	"github.com/uber-go/tally"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"sync"
 )
 
 type contextFieldKey string
@@ -39,6 +40,7 @@ const (
 	routingDelegateKey    = contextFieldKey("rd")
 	endpointRequestHeader = contextFieldKey("endpointRequestHeader")
 	requestLogFields      = contextFieldKey("requestLogFields")
+	endpointScopeFields   = contextFieldKey("endpointScopeFields")
 	requestScopeFields    = contextFieldKey("requestScopeFields")
 )
 
@@ -56,8 +58,8 @@ const (
 
 const (
 	scopeFieldRequestMethod = "method"
-	scopeFieldEndpointID    = "endpointID"
-	scopeFieldHandlerID     = "handlerID"
+	scopeFieldEndpoint      = "endpointid"
+	scopeFieldHandler       = "handlerid"
 )
 
 const (
@@ -148,9 +150,9 @@ func WithLogFields(ctx context.Context, newFields ...zap.Field) context.Context 
 	return context.WithValue(ctx, requestLogFields, accumulateLogFields(ctx, newFields))
 }
 
-// WithScopeFields returns a new context with the given scope fields attached to context.Context
-func WithScopeFields(ctx context.Context, newFields map[string]string) context.Context {
-	fields := GetScopeFieldsFromCtx(ctx)
+// WithRequestScopeFields returns a new context with the given scope fields attached to context.Context
+func WithRequestScopeFields(ctx context.Context, newFields map[string]string) context.Context {
+	fields := GetRequestScopeFieldsFromCtx(ctx)
 	for k, v := range newFields {
 		fields[k] = v
 	}
@@ -158,10 +160,33 @@ func WithScopeFields(ctx context.Context, newFields map[string]string) context.C
 	return context.WithValue(ctx, requestScopeFields, fields)
 }
 
-// GetScopeFieldsFromCtx returns the tag info extracted from context.
-func GetScopeFieldsFromCtx(ctx context.Context) map[string]string {
+// GetRequestScopeFieldsFromCtx returns the tag info extracted from context.
+func GetRequestScopeFieldsFromCtx(ctx context.Context) map[string]string {
 	fields := make(map[string]string)
 	if val := ctx.Value(requestScopeFields); val != nil {
+		headers, _ := val.(map[string]string)
+		for k, v := range headers {
+			fields[k] = v
+		}
+	}
+
+	return fields
+}
+
+// WithEndpointScopeFields returns a new context with the given scope fields attached to context.Context
+func WithEndpointScopeFields(ctx context.Context, newFields map[string]string) context.Context {
+	fields := GetEndpointScopeFieldsFromCtx(ctx)
+	for k, v := range newFields {
+		fields[k] = v
+	}
+
+	return context.WithValue(ctx, endpointScopeFields, fields)
+}
+
+// GetEndpointScopeFieldsFromCtx returns the tag info extracted from context.
+func GetEndpointScopeFieldsFromCtx(ctx context.Context) map[string]string {
+	fields := make(map[string]string)
+	if val := ctx.Value(endpointScopeFields); val != nil {
 		headers, _ := val.(map[string]string)
 		for k, v := range headers {
 			fields[k] = v
@@ -270,4 +295,98 @@ func (c *contextLogger) Warn(ctx context.Context, msg string, userFields ...zap.
 
 func (c *contextLogger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	return c.log.Check(lvl, msg)
+}
+
+// ContextMetrics emits metrics.
+type ContextMetrics interface {
+	GetOrAddInboundHTTPMetrics(ctx context.Context) *InboundHTTPMetrics
+	GetOrAddEndpointMetrics(ctx context.Context) *EndpointMetrics
+	GetOrAddInboundTChannelMetrics(ctx context.Context) *InboundTChannelMetrics
+	getEndpointMetrics(key string) *EndpointMetrics
+	getInboundHTTPMetrics(key string) *InboundHTTPMetrics
+	getInboundTChannelMetrics(key string) *InboundTChannelMetrics
+}
+
+type contextMetrics struct {
+	sync.RWMutex
+	scope                  tally.Scope
+	endpointMetrics        map[string]*EndpointMetrics
+	inboundHTTPMetrics     map[string]*InboundHTTPMetrics
+	inboundTChannelMetrics map[string]*InboundTChannelMetrics
+}
+
+// NewContextMetrics emits metrics.
+func NewContextMetrics(scope tally.Scope) ContextMetrics {
+	return &contextMetrics{
+		scope:                  scope,
+		endpointMetrics:        make(map[string]*EndpointMetrics),
+		inboundHTTPMetrics:     make(map[string]*InboundHTTPMetrics),
+		inboundTChannelMetrics: make(map[string]*InboundTChannelMetrics),
+	}
+}
+
+// GetOrAddInboundHTTPMetrics add tags to scope and create inbound http metrics
+func (c *contextMetrics) GetOrAddInboundHTTPMetrics(ctx context.Context) *InboundHTTPMetrics {
+	tags := GetRequestScopeFieldsFromCtx(ctx)
+	key := tally.KeyForStringMap(tags)
+	c.RLock()
+	if val, ok := c.inboundHTTPMetrics[key]; ok {
+		c.RUnlock()
+		return val
+	}
+
+	c.RUnlock()
+	scope := c.scope.Tagged(tags)
+	c.Lock()
+	c.inboundHTTPMetrics[key] = NewInboundHTTPMetrics(scope)
+	c.Unlock()
+	return c.inboundHTTPMetrics[key]
+}
+
+// GetOrAddEndpointMetrics add tags to scope and create endpoint metrics
+func (c *contextMetrics) GetOrAddEndpointMetrics(ctx context.Context) *EndpointMetrics {
+	tags := GetEndpointScopeFieldsFromCtx(ctx)
+	key := tally.KeyForStringMap(tags)
+	c.RLock()
+	if val, ok := c.endpointMetrics[key]; ok {
+		c.RUnlock()
+		return val
+	}
+
+	c.RUnlock()
+	scope := c.scope.Tagged(tags)
+	c.Lock()
+	c.endpointMetrics[key] = NewEndpointMetrics(scope)
+	c.Unlock()
+	return c.endpointMetrics[key]
+}
+
+// GetOrAddInboundTChannelMetrics add tags to scope and create inbound tchannel metrics
+func (c *contextMetrics) GetOrAddInboundTChannelMetrics(ctx context.Context) *InboundTChannelMetrics {
+	tags := GetRequestScopeFieldsFromCtx(ctx)
+	key := tally.KeyForStringMap(tags)
+	c.RLock()
+	if val, ok := c.inboundTChannelMetrics[key]; ok {
+		c.RUnlock()
+		return val
+	}
+
+	c.RUnlock()
+	scope := c.scope.Tagged(tags)
+	c.Lock()
+	c.inboundTChannelMetrics[key] = NewInboundTChannelMetrics(scope)
+	c.Unlock()
+	return c.inboundTChannelMetrics[key]
+}
+
+func (c *contextMetrics) getEndpointMetrics(key string) *EndpointMetrics {
+	return c.endpointMetrics[key]
+}
+
+func (c *contextMetrics) getInboundHTTPMetrics(key string) *InboundHTTPMetrics {
+	return c.inboundHTTPMetrics[key]
+}
+
+func (c *contextMetrics) getInboundTChannelMetrics(key string) *InboundTChannelMetrics {
+	return c.inboundTChannelMetrics[key]
 }

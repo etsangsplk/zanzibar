@@ -60,7 +60,9 @@ func TestInvalidReadAndUnmarshalBody(t *testing.T) {
 	defer gateway.Close()
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
-	endpoint := zanzibar.NewRouterEndpoint(
+	endpoint := zanzibar.NewRouterEndpointContext(
+		bgateway.ActualGateway.ContextExtractor,
+		bgateway.ActualGateway.ContextMetrics,
 		bgateway.ActualGateway.Logger,
 		bgateway.ActualGateway.AllHostScope,
 		bgateway.ActualGateway.Tracer,
@@ -122,7 +124,9 @@ func TestDoubleParseQueryValues(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -183,7 +187,9 @@ func TestFailingGetQueryBool(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -241,7 +247,9 @@ func TestFailingGetQueryInt8(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -299,7 +307,9 @@ func TestFailingHasQueryValue(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -357,7 +367,9 @@ func TestFailingGetQueryInt16(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -415,7 +427,9 @@ func TestFailingGetQueryInt32(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -473,7 +487,9 @@ func TestFailingGetQueryInt64(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -531,7 +547,9 @@ func TestFailingGetQueryFloat64(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -589,7 +607,9 @@ func TestFailingHasQueryPrefix(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -640,7 +660,9 @@ func TestGetQueryBoolList(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -673,7 +695,9 @@ func TestFailingGetQueryBoolList(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -731,7 +755,9 @@ func TestGetQueryInt8List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -764,7 +790,9 @@ func TestFailingGetQueryInt8List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -822,7 +850,9 @@ func TestGetQueryInt16List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -855,7 +885,9 @@ func TestFailingGetQueryInt16List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -913,7 +945,9 @@ func TestGetQueryInt32List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -946,7 +980,9 @@ func TestFailingGetQueryInt32List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1004,7 +1040,9 @@ func TestGetQueryInt64List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1037,7 +1075,9 @@ func TestFailingGetQueryInt64List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1095,7 +1135,9 @@ func TestGetQueryFloat64List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1128,7 +1170,9 @@ func TestFailingGetQueryFloat64List(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1186,7 +1230,9 @@ func TestFailingGetQueryValues(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1232,7 +1278,9 @@ func TestGetQueryValues(t *testing.T) {
 
 	g := ms.Server()
 	err := g.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			g.ContextExtractor,
+			g.ContextMetrics,
 			g.Logger,
 			g.AllHostScope,
 			g.Tracer,
@@ -1294,7 +1342,9 @@ func TestPeekBody(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"POST", "/foo", zanzibar.NewRouterEndpoint(
+		"POST", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -1346,7 +1396,9 @@ func TestSpanCreated(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	err = bgateway.ActualGateway.HTTPRouter.Register(
-		"POST", "/foo", zanzibar.NewRouterEndpoint(
+		"POST", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
@@ -1385,7 +1437,9 @@ func TestIncomingHTTPRequestServerLog(t *testing.T) {
 
 	bgateway := gateway.(*benchGateway.BenchGateway)
 	bgateway.ActualGateway.HTTPRouter.Register(
-		"GET", "/foo", zanzibar.NewRouterEndpoint(
+		"GET", "/foo", zanzibar.NewRouterEndpointContext(
+			bgateway.ActualGateway.ContextExtractor,
+			bgateway.ActualGateway.ContextMetrics,
 			bgateway.ActualGateway.Logger,
 			bgateway.ActualGateway.AllHostScope,
 			bgateway.ActualGateway.Tracer,
