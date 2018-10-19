@@ -21,6 +21,7 @@
 package zanzibar
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -325,11 +326,11 @@ func (conf *StaticConfig) InspectOrDie() map[string]interface{} {
 	result := map[string]interface{}{}
 
 	for k, v := range conf.configValues {
-		result[k] = v
+		result[k] = fmt.Sprintf("%v", v)
 	}
 
 	for k, v := range conf.seedConfig {
-		result[k] = v
+		result[k] = fmt.Sprintf("%v", v)
 	}
 	return result
 }
